@@ -22,7 +22,7 @@ paths:
       parameters:
       - name: drn
         in: path
-        description: "The deposit reference number of the account to check"
+        description: "The Deposit Reference Number of the account to check"
         required: true
         schema:
           type: string
@@ -78,6 +78,7 @@ components:
       type: object
       required:
       - amount
+      - expirationDate
       properties:
         amount:
           type: string
@@ -88,6 +89,7 @@ components:
           properties:
             Beneficiary_Payment_Purpose:
               type: string
+              description: "Select an option from the purpose of payment."
               enum:
               - Asset Purchase
               - Contract Payment
@@ -103,10 +105,18 @@ components:
               - Rent/Utility Payments
               - Savings
               - Tax Payments
-              - Other (describe below)
             Payment_Invoice:
               type: string
               description: "To improve processing speed, please include an invoice for any payment request of $3,000 or more"
+        description:
+          type: string
+          description: "Provide an internal purpose / description related to the transaction"
+        subject: 
+          type: string
+          description: "The DRN (Deposit Reference Number) of the user provided to the merchant once the account is registered and activated with fv bank."
+        expirationDate:
+          type: string
+          description: "The date till this payment request is valid. Must be in the format YYYY-MM-DD"
   securitySchemes:
     basicAuth:
       type: http
