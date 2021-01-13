@@ -10,10 +10,15 @@ info:
     Using these APIs the merchant partners will be able to interact with users to fund their user account or request payments from them. Once the merchant partner is on-boarded at FV bank, they will be issued with an access-client-token and a merchant partner id. All the blow apis are required to be called with the access-client-token in the header.
 
 servers:
-- url: 'https://dev.backend.fvbank.us'
+- url: 'https://dev.api.fvbank.us'
+
+tags:
+  - name: Client
+  - name: Account
+  - name: Transactions
 
 paths:
-  /run/fvnet/checkAccountStatus/{drn}:
+  /fvnet/checkAccountStatus/{drn}:
     get:
       tags:
       - "Account"
@@ -37,15 +42,15 @@ paths:
                 $ref: "#/components/schemas/accountStatus"
         "500":
           description: "Internal Server Error"
-  /run/fvnet/pushfunds:
+  /fvnet/payment/push:
     post:
       tags:
       - "Transactions"
-      summary: "Performs a payment from the given partner to a FVBank user"
-      description: "Performs either a direct, scheduled or recurring payment from the owner indicated on the path to the owner specified on the body. The destination user should be informed in the subject parameter. If the subject is system, it will be a payment to a system account. The payment id is returned on the response, and a link to the transaction details is returned on the Location header."
+      summary: "Performs a payment from the given merchant partner to any user within the system"
+      description: "Performs a direct payment from the merchant partner to to the user specified in the body. The destination user is identified by subject parameter. If the subject is system, it will be a payment to a system account. The payment id is returned on the response, and a link to the transaction details is returned on the Location header."
       operationId: "pushFunds"
       requestBody:
-        description: "The payment parameters"
+        description: "Request Body"
         required: true
         content:
           application/json:
@@ -56,9 +61,104 @@ paths:
       responses:
         "500":
           description: "Internal server error"
+        "200":
+          description: "Successful"
+          content: 
+            text/plain: 
+              schema:
+                type: string
+                example: "Success"
+  /fvnet/payment/request:
+    post:
+      tags:
+      - "Transactions"
+      summary: "merchant partner requests a payment from user identified by the DRN"
+      description: "Performs either a direct, scheduled or recurring payment from the owner indicated on the path to the owner specified on the body. The destination user should be informed in the subject parameter. If the subject is system, it will be a payment to a system account. The payment id is returned on the response, and a link to the transaction details is returned on the Location header."
+      operationId: "requestFunds"
+      requestBody:
+        description: "Request Body"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/paymentRequest"
+      security:
+      - accessClient: []
+      responses:
+        "500":
+          description: "Internal server error"
+        "200":
+          description: "Successful"
+          content: 
+            text/plain: 
+              schema:
+                type: string
+                example: "Success"
+  /fvnet/upload/invoice:
+    post:
+      tags:
+      - "Transactions"
+      summary: "Uploads a new invoice."
+      description: "Uploads a new invoice. The returned id can later be used as value of a 'Payment_Invoice' custom field in the fvnet calls"
+      operationId: "uploadInvoice"
+      requestBody:
+        description: "Request Parameters"
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/uploadInvoice"
+      security:
+      - accessClient: []
+      responses:
+        "201":
+          description: "Returns an id to be used later in the pushfunds or paymentrequests calls on the 'Payment_Invoice' custom field"
+        "500":
+          description: "Internal server error"
+  /fvnet/access-client/activate:
+    post:
+      tags:
+      - Client
+      summary: "Get access client token using the client activation code."
+      description: "Get access client token using the client activation code. This is required to be run once per client setup. The activation code will be provided during the setup of the MP setup."
+      operationId: activateClient
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+      security:
+      - basicAuth: []
+      responses:
+        200:
+          description: OK
+
+
+
+              
 
 components:
   schemas:
+    uploadInvoice:
+      type: object
+      required:
+        - file
+        - customField
+        - customFieldKind
+      properties:
+        file:
+          type: string
+          format: binary
+          description: "The Invoice. Accepted formats: PDF, Word, Images, Excel"
+        customField:
+          type: string
+          default: "Payment_Invoice"
+          description: "Set to 'Payment_Invoice' always"
+        customFieldKind:
+          type: string
+          default: "transaction"
+          description: "Set to 'transaction' always"
     accountStatus:
       type: object
       properties:
